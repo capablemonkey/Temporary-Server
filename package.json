@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "express": "~4.13.4",
+    "multer": "~1.1.0",
+    "request": "~2.69.0",
+    "ssl-root-cas": "~1.1.10",
+    "node-uuid": "~1.4.7",
+    "restler": "~3.4.0"
+  }
+}
