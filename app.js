@@ -23,15 +23,15 @@ app.get('/', function(req, res) {
 });
 
 app.post('/image', upload.single('shapeJS_img'), function(req, res) {
+  var uuidJS = uuid.v4();
   console.log(req.file);
   var options = {
-    decoding: 'buffer',
     multipart: true,
     //url: 'http://gpu-public-us-east-1b.shapeways.com/service/sws_service_shapejs_rt_v1.0.0/updateScene',
     headers: {},
     data: {
       shapeJS_img: restler.file('./uploads/' + req.file.filename, null, req.file.size),
-      jobID: uuid.v4(),
+      jobID: uuidJS,
       script: "function imgChanged(e){return void 0===e.img?null:(imgBox=new Image3D(e.img,20*MM,20*MM,4*MM,vs),imgBox.setBlurWidth(.1*MM),imgBox.setImagePlace(Image3D.IMAGE_PLACE_BOTH),imgBox.setBaseThickness(.5),imgBox.set(\"distanceFactor\",.8),shape.setSource(imgBox),null)}function main(e){var n=11*MM,i=new Box(2*n,2*n,4*MM);new Bounds(-n,n,-n,n,-n,n);return shape=new Scene(i,new Bounds(-n,n,-n,n,-n,n),vs),void 0===e.img?shape:(imgChanged(e),shape)}var uiParams=[{name:\"img\",desc:\"Image Source\",type:\"uri\",onChange:\"imgChanged\"}],vs=.1*MM,imgBox,shape;"
     }
   }
@@ -39,12 +39,17 @@ app.post('/image', upload.single('shapeJS_img'), function(req, res) {
     //console.log(response);
     //console.log(error);
     console.log(body);
-    fs.writeFile("./3dFiles/output.stl", body, function(err) {
-      if (err) {
-        return console.log(err);
-      }
-    });
     res.send('ayy lmao');
+    restler.get('http://gpu-public-us-east-1b.shapeways.com/service/sws_service_shapejs_rt_v1.0.0/saveModelCached?jobID=' + uuidJS, {
+      decoding: 'buffer'
+    }).on('complete', function(body) {
+	    fs.writeFile("./3dFiles/output.stl", body, function(err) {
+	      if (err) {
+		return console.log(err);
+	      }
+	    });
+      });
+    console.log('http://gpu-public-us-east-1b.shapeways.com/service/sws_service_shapejs_rt_v1.0.0/saveModelCached?jobID=' + uuidJS);
   });
 });
 
