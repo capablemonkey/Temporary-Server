@@ -4,6 +4,7 @@ var sslRootCAs = require('ssl-root-cas/latest');
 sslRootCAs.inject();
 var fs = require('fs');
 var request = require('request');
+var async = require('async');
 var express = require('express');
 var app = express();
 var multer = require('multer');
@@ -40,8 +41,8 @@ app.post('/image', upload.single('shapeJS_img'), function(req, res) {
             decoding: 'buffer'
         }).on('complete', function(body) {
 
-            var stlFilePath = "./3dFiles/test.stl";
-            var objFilePath = "./3dFiles/test.obj";
+            var stlFilePath = "./3dFiles/original.stl";
+            var daeFilePath = "./3dFiles/original.dae";
 
             fs.writeFile(stlFilePath, body, function(err) {
                 if (err) {
@@ -49,28 +50,35 @@ app.post('/image', upload.single('shapeJS_img'), function(req, res) {
                 }
             });
 
-            // execute meshconv
-            exec('../conversion-tools/meshconv ' + stlFilePath + ' -c obj', function(error, stdout, stderr) {
-                console.log('Running meshconv on ' + stlFilePath);
+            // execute assimp
+            exec('assimp export ' + stlFilePath + ' ' + daeFilePath, function(error, stdout, stderr) {
+                console.log('Running assimp on ' + stlFilePath);
                 console.log(error);
                 console.log(stdout);
                 console.log(stderr);
 
-
-                // execute fbx-con
-                exec('../conversion-tools/fbx-conv/fbx-conv-lin64 -o g3db ' + objFilePath + ' ./3dFiles/test.g3db', function(error, stdout, stderr) {
-                    console.log('Running fbx-conv');
+                // execute python script to fix xml
+                exec('cd ./3dFiles; python main.py; cd ..', function(error, stdout, stderr) {
+                    console.log('Running python script');
                     console.log(error);
                     console.log(stdout);
                     console.log(stderr);
 
-                    res.sendFile("./3dFiles/test.g3db", {root: __dirname}, function(err) {
-                        if (err) {
-                            console.log(err);
-                            res.status(err.status).end();
-                        } else {
-                            console.log('Sent: test.g3db');
-                        }
+                    // execute fbx-conv
+                    exec('../conversion-tools/fbx-conv/fbx-conv-lin64 -o g3db ./3dFiles/fixed.dae ./3dFiles/test.g3db', function(error, stdout, stderr) {
+                        console.log('Running fbx-conv');
+                        console.log(error);
+                        // console.log(stdout);
+                        console.log(stderr);
+
+                        res.sendFile("./3dFiles/test.g3db", {root: __dirname}, function(err) {
+                            if (err) {
+                                console.log(err);
+                                res.status(err.status).end();
+                            } else {
+                                console.log('Sent: test.g3db');
+                            }
+                        });
                     });
                 });
             });
